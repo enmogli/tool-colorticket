@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>口袋色票 - 全能磁吸拆解版</title>
+<title>口袋色票 - 磁吸拆解與視覺引導版</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{width:100%;height:100%;background:transparent;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
@@ -15,101 +15,133 @@ body.t-garden{--a:#5A7A2A;--a2:#7A9A40;--a3:#3A5A18;--bg:#F5F2E8;--bg2:#EDE8D4;-
 body.t-blanc{--a:#888;--a2:#AAA;--a3:#666;--bg:#FDFDFD;--bg2:#F5F5F5;--bg3:#EBEBEB;--bg4:#E0E0E0;--tx:#1A1A1A;--tx2:#666;--tx3:#AAA;--bd:rgba(120,120,120,0.45);--bd2:rgba(120,120,120,0.2);--seg-bg:rgba(120,120,120,0.1);--seg-tx:#555;--sl-empty:#EEE;--sl-etx:#CCC;--dc:#D0EAD0;--dt:#226622;--wc:#F0EAC0;--wt:#7A6600;--fc:#F0D0D0;--ft:#882222;--dot-r:#CC4040;--dot-y:#CCAA10;--dot-g:#3A8A3A;--sb:rgba(120,120,120,0.5);}
 body.t-pink{--a:#C0507A;--a2:#D870A0;--a3:#903860;--bg:#FFF5F8;--bg2:#FAE8F0;--bg3:#F4D8E8;--bg4:#ECC8DA;--tx:#2A1020;--tx2:#7A4060;--tx3:#B888A0;--bd:rgba(192,80,122,0.5);--bd2:rgba(192,80,122,0.22);--seg-bg:rgba(192,80,122,0.12);--seg-tx:var(--a);--sl-empty:#F8E4EE;--sl-etx:#D8B0C8;--dc:#C8E8C8;--dt:#226622;--wc:#F8E8B0;--wt:#7A5800;--fc:#F8C8D8;--ft:#882240;--dot-r:#CC4040;--dot-y:#C89010;--dot-g:#3A8A3A;--sb:rgba(192,80,122,0.6);}
 
-::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar{width:8px}
 ::-webkit-scrollbar-thumb{background:var(--sb);border-radius:10px}
 
 /* 浮動視窗共通樣式 */
 .win{
   position:fixed; background:var(--bg); border:1px solid var(--a); border-radius:14px;
-  overflow:hidden; display:flex; flex-direction:column; visibility: hidden;
+  overflow:visible; display:flex; flex-direction:column; visibility: hidden;
   box-shadow:0 8px 32px rgba(0,0,0,0.2); transition:opacity 0.2s;
 }
 .win.dragging{box-shadow:0 12px 40px rgba(0,0,0,0.28); opacity:0.96; z-index:2000 !important;}
 
-/* 主程式視窗 */
-#app{ width:340px; height:600px; min-height:400px; z-index:1000; }
+/* 主程式與面板尺寸 */
+#app{ width:380px; height:640px; min-height:450px; z-index:1000; }
+#cmpPanel{ width:340px; height:500px; z-index:900; }
 
-/* 磁吸分析面板 */
-#cmpPanel{ width:300px; height:450px; z-index:900; }
-
-/* 標題列 */
-.tb{
-  display:flex;align-items:center;gap:10px; padding:12px 14px; background:var(--bg2);
-  border-bottom:1px solid var(--bd); cursor:grab; flex-shrink:0; user-select:none;
+/* ── 核心修復：懸浮引導提示系統 (Tooltips) ── */
+[data-tip] { position: relative; }
+[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  top: calc(100% + 10px); left: 50%; transform: translateX(-50%);
+  background: rgba(0,0,0,0.85); color: #fff;
+  padding: 6px 12px; border-radius: 6px;
+  font-size: 13px; font-weight: 500; white-space: nowrap;
+  opacity: 0; pointer-events: none; transition: all 0.2s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+  z-index: 10000; /* 確保絕對在最上層 */
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
-.title-txt{font-size:14px;font-weight:600;color:var(--tx2);white-space:nowrap}
-.dot{width:12px;height:12px;border-radius:50%;cursor:pointer;flex-shrink:0;border:1px solid rgba(0,0,0,0.1)}
+[data-tip]:hover::after { opacity: 1; top: calc(100% + 15px); }
+
+/* 標題列：設定 Stacking Context 防止內容遮擋 */
+.tb{
+  display:flex;align-items:center;gap:12px; padding:14px 16px; background:var(--bg2);
+  border-bottom:1px solid var(--bd); cursor:grab; flex-shrink:0; user-select:none;
+  position: relative; z-index: 100; /* 高於內容區域 */
+}
+.title-txt{font-size:18px;font-weight:600;color:var(--tx2);white-space:nowrap}
+.dot{width:14px;height:14px;border-radius:50%;cursor:pointer;flex-shrink:0;border:1px solid rgba(0,0,0,0.1)}
 .dot-r{background:var(--dot-r)}.dot-y{background:var(--dot-y)}.dot-g{background:var(--dot-g)}
 .or-line{height:1px;background:var(--a);opacity:0.3;flex:1}
-.hbtn{background:transparent;border:1px solid var(--bd2);border-radius:8px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--tx2)}
-.hbtn:hover{background:var(--bg3);color:var(--a)}
-.hbtn.active{background:var(--seg-bg);color:var(--a);border-color:var(--a)}
 
-/* 縮放 */
-.rz{position:absolute;z-index:100}
-.rz-br{bottom:0;right:0;width:18px;height:18px;cursor:se-resize}
+/* 核心圖示優化 */
+.hbtn{
+  background:transparent; border:1px solid var(--bd2); border-radius:8px;
+  width:36px; height:36px; display:flex; align-items:center; justify-content:center;
+  cursor:pointer; color:var(--tx2); transition:all 0.15s;
+}
+.hbtn:hover{background:var(--bg3); border-color:var(--a); color:var(--a)}
 
-/* 內容區域 */
-#mainBody, #cmpBody{ flex:1; overflow-y:auto; display:flex; flex-direction:column; min-height:0 }
+/* 滴管圖示 (明顯英雄版) */
+.hbtn-primary {
+  background: var(--a) !important;
+  color: #fff !important;
+  border: none !important;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+  position: relative;
+}
+.hbtn-primary:hover {
+  background: var(--a2) !important;
+  transform: translateY(-1px) scale(1.05);
+  box-shadow: 0 6px 14px rgba(0,0,0,0.2);
+}
 
-/* 頂部操作區 */
-#topArea{ flex-shrink:0; border-bottom:1px solid var(--bd2); background:var(--bg) }
-#canvasWrap{position:relative;width:100%;height:160px;cursor:crosshair;border-bottom:1px solid var(--bd2)}
+/* 內容區：降低堆疊順序防止遮擋提示 */
+#mainBody, #cmpBody{ flex:1; overflow-y:auto; display:flex; flex-direction:column; min-height:0; position: relative; z-index: 1; }
+#topArea{ flex-shrink:0; border-bottom:1px solid var(--bd2); background:var(--bg); position: relative; z-index: 1; }
+#canvasWrap{position:relative;width:100%;height:180px;cursor:crosshair;border-bottom:1px solid var(--bd2)}
 #cc{display:block;width:100%;height:100%}
-#ring{position:absolute;width:24px;height:24px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,0.5);pointer-events:none;display:none;transform:translate(-50%,-50%)}
-#preview{display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg2)}
-#sw{width:48px;height:48px;border-radius:10px;border:1px solid var(--bd);flex-shrink:0}
-.hexv{font-size:20px;font-weight:700;color:var(--tx);font-family:'SF Mono',monospace}
+#ring{position:absolute;width:30px;height:30px;border-radius:50%;border:2.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,0.5);pointer-events:none;display:none;transform:translate(-50%,-50%)}
+#preview{display:flex;align-items:center;gap:16px;padding:16px;background:var(--bg2)}
+#sw{width:64px;height:64px;border-radius:12px;border:1px solid var(--bd);flex-shrink:0}
+.hexv{font-size:28px;font-weight:700;color:var(--tx);font-family:'SF Mono',monospace;letter-spacing:0.02em}
 
 /* 區塊標籤 */
-.sec-head{display:flex;align-items:center;padding:10px 14px;cursor:pointer;background:rgba(0,0,0,0.02);border-bottom:1px solid var(--bd2)}
-.sec-lbl{font-size:13px;font-weight:700;color:var(--a);text-transform:uppercase;flex:1}
+.sec-head{display:flex;align-items:center;padding:12px 16px;cursor:pointer;background:rgba(0,0,0,0.02);border-bottom:1px solid var(--bd2)}
+.sec-lbl{font-size:16px;font-weight:700;color:var(--a);text-transform:uppercase;flex:1}
 .sec-body{overflow-y:auto; transition: flex 0.3s; flex: 0 0 0; min-height: 0;}
-.collapsible.expanded .sec-body{ flex: 1; min-height: 150px; }
+.collapsible.expanded .sec-body{ flex: 1; min-height: 180px; }
 
 /* 網格 */
 #slotsGrid, #classicGrid{display:grid;width:100%}
 #slotsGrid{grid-template-columns:repeat(5,1fr)}
 #classicGrid{grid-template-columns:repeat(4,1fr)}
-.slot, .cslot{padding:8px 4px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;border-right:1px solid var(--bd2);border-bottom:1px solid var(--bd2)}
-.slot-sw, .cslot-sw{width:32px;height:28px;border-radius:6px;border:1px solid var(--bd2)}
-.slot-hx, .cslot-nm{font-size:11px;text-align:center;white-space:nowrap;overflow:hidden;width:100%}
+.slot, .cslot{padding:10px 4px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;border-right:1px solid var(--bd2);border-bottom:1px solid var(--bd2)}
+.slot-sw, .cslot-sw{width:40px;height:34px;border-radius:8px;border:1px solid var(--bd2)}
+.slot-hx, .cslot-nm{font-size:14px;font-weight:500;text-align:center;white-space:nowrap;overflow:hidden;width:100%}
 
 /* 對比分析內容 */
-.cmp-split{display:flex;height:100px;flex-shrink:0}
-.cmp-half{flex:1;display:flex;align-items:center;justify-content:center;font-family:'SF Mono';font-weight:600;font-size:14px}
-.cmp-stats{display:grid;grid-template-columns:repeat(3,1fr);padding:15px 10px;gap:8px}
-.cs-box{text-align:center;padding:8px 4px;background:var(--bg3);border-radius:8px;border:1px solid var(--bd2)}
-.cs-v{font-size:20px;font-weight:700;color:var(--tx)}
-.cs-l{font-size:10px;color:var(--tx3);margin-top:2px;text-transform:uppercase}
-.cmp-foot{padding:10px;font-size:12px;color:var(--tx3);text-align:center;font-style:italic}
+.cmp-split{display:flex;height:120px;flex-shrink:0}
+.cmp-half{flex:1;display:flex;align-items:center;justify-content:center;font-family:'SF Mono';font-weight:700;font-size:18px}
+.cmp-stats{display:grid;grid-template-columns:repeat(3,1fr);padding:20px 12px;gap:10px}
+.cs-box{text-align:center;padding:12px 6px;background:var(--bg3);border-radius:10px;border:1px solid var(--bd2)}
+.cs-v{font-size:26px;font-weight:700;color:var(--tx)}
+.cs-l{font-size:13px;color:var(--tx3);margin-top:4px;text-transform:uppercase;font-weight:600}
+.cmp-foot{padding:12px;font-size:14px;color:var(--tx3);text-align:center;font-style:italic}
 
 /* 設定面板 */
-#settingsPanel{display:none;background:var(--bg2);padding:10px;border-bottom:1px solid var(--bd)}
+#settingsPanel{display:none;background:var(--bg2);padding:15px;border-bottom:1px solid var(--bd)}
 #settingsPanel.show{display:block}
-.theme-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-top:8px}
-.theme-card{display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 2px;border:1px solid var(--bd2);border-radius:8px;cursor:pointer}
-.theme-swatch{width:24px;height:24px;border-radius:50%}
-.theme-name{font-size:10px;color:var(--tx2)}
+.theme-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:12px}
+.theme-card{display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 2px;border:1px solid var(--bd2);border-radius:10px;cursor:pointer}
+.theme-swatch{width:30px;height:30px;border-radius:50%}
+.theme-name{font-size:12px;color:var(--tx2)}
 
-#hint-float{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--a);color:#fff;padding:8px 16px;border-radius:20px;font-size:12px;box-shadow:0 4px 12px rgba(0,0,0,0.2);pointer-events:none;opacity:0;z-index:9999}
+/* 浮動狀態通知 */
+#hint-float{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:var(--a);color:#fff;padding:10px 20px;border-radius:24px;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,0.2);pointer-events:none;opacity:0;z-index:99999;transition: opacity 0.3s}
 </style>
 </head>
 <body class="t-angel">
 
 <!-- 主程式 -->
 <div id="app" class="win">
-  <div class="rz rz-br" data-target="app"></div>
   <div class="tb" id="tb-app">
-    <div class="dot dot-r" onclick="document.getElementById('app').style.display='none'"></div>
-    <div class="dot dot-y" onclick="toggleMin()"></div>
-    <div class="dot dot-g" onclick="resetLayout()"></div>
+    <div class="dot dot-r" data-tip="關閉口袋色票" onclick="document.getElementById('app').style.display='none'"></div>
+    <div class="dot dot-y" data-tip="最小化內容" onclick="toggleMin()"></div>
+    <div class="dot dot-g" data-tip="回歸畫面中央" onclick="resetLayout()"></div>
     <div class="or-line"></div>
     <span class="title-txt">口袋色票</span>
     <div class="or-line"></div>
-    <div style="display:flex;gap:5px">
-      <button class="hbtn" onclick="startEyedrop()"><svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path d="M12.5 8.5 L14.5 6.5 L17 9 L15 11 L12.5 11 Z"/><circle cx="16.8" cy="4" r="1.8"/></svg></button>
-      <button class="hbtn" onclick="toggleSettings()"><svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="10" r="3"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2" stroke="currentColor" stroke-width="1.2"/></svg></button>
+    <div style="display:flex;gap:10px">
+      <button class="hbtn hbtn-primary" data-tip="擷取螢幕顏色" onclick="startEyedrop()">
+        <svg width="24" height="24" viewBox="0 0 20 20" fill="currentColor">
+          <path d="M12.5 8.5 L14.5 6.5 L17 9 L15 11 L12.5 11 Z"/><circle cx="16.8" cy="4" r="1.8"/>
+          <path d="M11 10 L4 17" stroke="currentColor" stroke-width="1.2"/>
+        </svg>
+      </button>
+      <button class="hbtn" data-tip="變更主題風格" onclick="toggleSettings()"><svg width="22" height="22" viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="10" r="3"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2" stroke="currentColor" stroke-width="1.5"/></svg></button>
     </div>
   </div>
 
@@ -118,20 +150,20 @@ body.t-pink{--a:#C0507A;--a2:#D870A0;--a3:#903860;--bg:#FFF5F8;--bg2:#FAE8F0;--b
   </div>
 
   <div id="topArea">
-    <div id="canvasWrap"><canvas id="cc"></canvas><div id="ring"></div></div>
+    <div id="canvasWrap" data-tip="在色盤移動取色"><canvas id="cc"></canvas><div id="ring"></div></div>
     <div id="preview">
       <div id="sw" style="background:#B8920A"></div>
       <div>
         <div class="hexv" id="hexVal">#B8920A</div>
-        <div style="font-size:12px;color:var(--tx3);font-family:'SF Mono'" id="rgbVal">rgb(184, 146, 10)</div>
+        <div style="font-size:15px;color:var(--tx3);font-family:'SF Mono';margin-top:2px" id="rgbVal">rgb(184, 146, 10)</div>
       </div>
-      <button class="hbtn" onclick="addMySlot(cur)" style="margin-left:auto">+</button>
+      <button class="hbtn" data-tip="將顏色存入收藏" onclick="addMySlot(cur)" style="margin-left:auto; font-size:22px">+</button>
     </div>
   </div>
 
   <div id="mainBody">
     <div class="collapsible expanded" id="sec-slots">
-      <div class="sec-head" onclick="toggleSec('slots')"><span class="sec-lbl">我的色票</span><span id="slotMeta" style="font-size:11px;color:var(--tx3)">0/12</span></div>
+      <div class="sec-head" onclick="toggleSec('slots')"><span class="sec-lbl">我的色票</span><span id="slotMeta" style="font-size:14px;color:var(--tx3)">0/12</span></div>
       <div class="sec-body"><div id="slotsGrid"></div></div>
     </div>
     <div class="collapsible" id="sec-classic">
@@ -143,22 +175,21 @@ body.t-pink{--a:#C0507A;--a2:#D870A0;--a3:#903860;--bg:#FFF5F8;--bg2:#FAE8F0;--b
 
 <!-- 對比分析面板 -->
 <div id="cmpPanel" class="win">
-  <div class="rz rz-br" data-target="cmpPanel"></div>
   <div class="tb" id="tb-cmp">
     <span class="title-txt">對比分析</span>
     <div class="or-line"></div>
-    <button class="hbtn active" id="dockBtn" onclick="toggleDock()" title="磁吸/分離">
-      <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
+    <button class="hbtn active" id="dockBtn" data-tip="切換 磁吸/分離 模式" onclick="toggleDock()">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M13 3h4v4M7 17H3v-4M17 3L11 9M3 17l6-6" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </button>
   </div>
   <div id="cmpBody">
-    <div id="cmpOut" style="flex:1"><div class="cmp-empty">選取兩色進行分析</div></div>
+    <div id="cmpOut" style="flex:1"><div class="cmp-empty" style="font-size:16px; padding-top:40px">選取兩色進行分析</div></div>
   </div>
 </div>
 
-<div id="hint-float">磁吸已啟用</div>
+<div id="hint-float">通知提示</div>
 
 <script>
 const appWin = document.getElementById('app');
@@ -172,7 +203,7 @@ let cur = {r:184,g:146,b:10};
 let mySlots = Array(12).fill(null);
 let mySel = [], classicSel = [];
 let isDocked = true;
-let dockSide = 'right'; // 'left' or 'right'
+let dockSide = 'right';
 let minimized = false;
 
 const CLASSICS = [
@@ -189,7 +220,6 @@ const THEMES = [
   {id:'t-pink', n:'柔玫', c:'#C0507A'}
 ];
 
-/* ── 核心功能 ── */
 function initCanvas(){
   const dpr = window.devicePixelRatio||1;
   const W = wrap.offsetWidth, H = wrap.offsetHeight;
@@ -205,7 +235,12 @@ function initCanvas(){
   ctx.fillStyle = vG; ctx.globalAlpha = 0.8; ctx.fillRect(0,0,W,H); ctx.globalAlpha = 1;
 }
 
-function hexToRgb(h){h=h.replace('#','');if(h.length===3)h=h.split('').map(x=>x+x).join('');const n=parseInt(h,16);return{r:(n>>16)&255,g:(n>>8)&255,b:n&255};}
+function hexToRgb(h){
+  h=h.replace('#','');
+  if(h.length===3)h=h.split('').map(x=>x+x).join('');
+  const n=parseInt(h,16);
+  return{r:(n>>16)&255,g:(n>>8)&255,b:n&255};
+}
 function toHex(c){return'#'+[c.r,c.g,c.b].map(v=>v.toString(16).padStart(2,'0')).join('').toUpperCase()}
 function lum(c){return 0.2126*c.r/255+0.7152*c.g/255+0.0722*c.b/255}
 function toHsl(r,g,b){
@@ -219,12 +254,16 @@ function toHsl(r,g,b){
 }
 
 async function startEyedrop() {
-  if (!window.EyeDropper) return;
+  if (!window.EyeDropper) {
+    showToast("瀏覽器不支援滴管功能");
+    return;
+  }
   const ed = new EyeDropper();
   try {
     const res = await ed.open();
     const rgb = hexToRgb(res.sRGBHex);
     setPreview(rgb); addMySlot(rgb);
+    showToast("顏色已成功擷取");
   } catch (e) {}
 }
 
@@ -234,6 +273,7 @@ function setPreview(rgb){
   document.getElementById('hexVal').textContent=h;
   document.getElementById('rgbVal').textContent=`rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
   ring.style.borderColor = lum(rgb)>0.5?'#000':'#fff';
+  ring.style.boxShadow = `0 0 0 1px ${lum(rgb)>0.5?'rgba(255,255,255,0.5)':'rgba(0,0,0,0.5)'}`;
 }
 
 function addMySlot(rgb){
@@ -284,7 +324,7 @@ function render(){
 function renderCmp(){
   const out = document.getElementById('cmpOut');
   const sel = [...mySel.map(i=>({rgb:mySlots[i],n:'自訂'})), ...classicSel.map(i=>({rgb:hexToRgb(CLASSICS[i].h),n:CLASSICS[i].n}))].filter(x=>x.rgb);
-  if(sel.length<2){out.innerHTML='<div class="cmp-empty">選取兩色進行分析</div>';return}
+  if(sel.length<2){out.innerHTML='<div class="cmp-empty" style="font-size:16px; padding-top:40px">選取兩色進行分析</div>';return}
   const c1=sel[0], c2=sel[1];
   const l1=lum(c1.rgb)+0.05, l2=lum(c2.rgb)+0.05, ratio=Math.max(l1,l2)/Math.min(l1,l2);
   const diff = Math.abs(lum(c1.rgb) - lum(c2.rgb));
@@ -301,10 +341,9 @@ function renderCmp(){
       <div class="cs-box"><div class="cs-v">${(diff*100).toFixed(0)}%</div><div class="cs-l">亮度差</div></div>
       <div class="cs-box"><div class="cs-v">${hd}°</div><div class="cs-l">色相差</div></div>
     </div>
-    <div class="cmp-foot">${c1.n} 與 ${c2.n} 的視覺對照</div>`;
+    <div class="cmp-foot">${c1.n} × ${c2.n}</div>`;
 }
 
-/* ── 核心優化：雙向磁吸邏輯 ── */
 let drag = { el: null, ox:0, oy:0 };
 
 document.addEventListener('mousedown', e => {
@@ -326,9 +365,7 @@ document.addEventListener('mousemove', e => {
   if (drag.el === appWin && isDocked) {
     syncCmpPos();
   } else if (drag.el === cmpWin) {
-    // 檢查右側磁吸距離
     const distR = Math.abs(nx - (appWin.offsetLeft + appWin.offsetWidth + 10));
-    // 檢查左側磁吸距離
     const distL = Math.abs(nx - (appWin.offsetLeft - cmpWin.offsetWidth - 10));
     const vDist = Math.abs(ny - appWin.offsetTop);
 
@@ -338,11 +375,8 @@ document.addEventListener('mousemove', e => {
         else if (distL < 30) { setDock(true, 'left'); }
       }
     } else {
-      // 已吸附狀態下，拉開超過 50px 則中斷
       const currentDist = (dockSide === 'right') ? distR : distL;
-      if (currentDist > 50 || vDist > 80) {
-        setDock(false, dockSide);
-      }
+      if (currentDist > 50 || vDist > 80) { setDock(false, dockSide); }
     }
   }
 });
@@ -355,11 +389,8 @@ document.addEventListener('mouseup', () => {
 function syncCmpPos() {
   if (!isDocked) return;
   const gap = 10;
-  if (dockSide === 'right') {
-    cmpWin.style.left = (appWin.offsetLeft + appWin.offsetWidth + gap) + 'px';
-  } else {
-    cmpWin.style.left = (appWin.offsetLeft - cmpWin.offsetWidth - gap) + 'px';
-  }
+  if (dockSide === 'right') cmpWin.style.left = (appWin.offsetLeft + appWin.offsetWidth + gap) + 'px';
+  else cmpWin.style.left = (appWin.offsetLeft - cmpWin.offsetWidth - gap) + 'px';
   cmpWin.style.top = appWin.offsetTop + 'px';
 }
 
@@ -370,7 +401,7 @@ function setDock(val, side) {
   btn.classList.toggle('active', isDocked);
   if (isDocked) {
     syncCmpPos();
-    showToast(`已吸附至${dockSide === 'right' ? '右' : '左'}側`);
+    showToast(`已磁吸至${dockSide === 'right' ? '右' : 'left' === 'left' ? '左' : ''}側`);
   }
 }
 
@@ -382,46 +413,30 @@ function showToast(txt) {
   setTimeout(()=> h.style.opacity = 0, 2000);
 }
 
-/* ── 縮放 ── */
-document.querySelectorAll('.rz').forEach(rz => {
-  rz.onmousedown = e => {
-    const target = document.getElementById(rz.dataset.target);
-    const startW = target.offsetWidth, startH = target.offsetHeight;
-    const startX = e.clientX, startY = e.clientY;
-    
-    const onMove = ev => {
-      target.style.width = Math.max(280, startW + (ev.clientX - startX)) + 'px';
-      target.style.height = Math.max(300, startH + (ev.clientY - startY)) + 'px';
-      if (target === appWin) { initCanvas(); syncCmpPos(); }
-    };
-    const onUp = () => {
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onUp);
-    };
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
-    e.stopPropagation(); e.preventDefault();
-  };
-});
-
-/* ── 初始化佈置 ── */
 function resetLayout(){
   const cx = window.innerWidth/2, cy = window.innerHeight/2;
-  const totalW = 340 + 300 + 10;
-  appWin.style.left = (cx - 340/2) + 'px'; // 居中主程式
-  appWin.style.top = (cy - 300) + 'px';
-  appWin.style.width = '340px'; appWin.style.height = '600px';
+  appWin.style.left = (cx - 380/2) + 'px'; 
+  appWin.style.top = (cy - 320) + 'px';
+  appWin.style.width = '380px'; appWin.style.height = '640px';
   appWin.style.visibility = 'visible';
-  
-  cmpWin.style.width = '300px'; cmpWin.style.height = '450px';
+  cmpWin.style.width = '340px'; cmpWin.style.height = '500px';
   cmpWin.style.visibility = 'visible';
-  setDock(true, 'right'); // 預設吸右
+  setDock(true, 'right');
   initCanvas();
 }
 
 function toggleSettings(){ document.getElementById('settingsPanel').classList.toggle('show'); }
 function setTheme(t){ document.body.className = t; }
-function setOpacity(v){ appWin.style.opacity = v/100; cmpWin.style.opacity = v/100; }
+
+const tg = document.getElementById('themeGrid');
+THEMES.forEach(t=>{
+  const d=document.createElement('div'); d.className='theme-card';
+  d.innerHTML=`<div class="theme-swatch" style="background:${t.c}"></div><div class="theme-name">${t.n}</div>`;
+  d.onclick=()=>setTheme(t.id); tg.appendChild(d);
+});
+
+window.onload = () => { render(); resetLayout(); };
+window.onresize = () => { if(isDocked) syncCmpPos(); initCanvas(); };
 
 wrap.addEventListener('mousemove', e => {
   const r = wrap.getBoundingClientRect();
@@ -433,16 +448,13 @@ wrap.addEventListener('mousemove', e => {
 });
 wrap.onmouseleave = () => ring.style.display='none';
 
-/* 生成主題 */
-const tg = document.getElementById('themeGrid');
-THEMES.forEach(t=>{
-  const d=document.createElement('div'); d.className='theme-card';
-  d.innerHTML=`<div class="theme-swatch" style="background:${t.c}"></div><div class="theme-name">${t.n}</div>`;
-  d.onclick=()=>setTheme(t.id); tg.appendChild(d);
-});
-
-window.onload = () => { render(); resetLayout(); };
-window.onresize = () => { if(isDocked) syncCmpPos(); initCanvas(); };
+function toggleMin() {
+  minimized = !minimized;
+  document.getElementById('topArea').style.display = minimized ? 'none' : 'block';
+  document.getElementById('mainBody').style.display = minimized ? 'none' : 'flex';
+  appWin.style.height = minimized ? 'auto' : '640px';
+  if(!minimized) setTimeout(initCanvas, 50);
+}
 </script>
 </body>
 </html>
